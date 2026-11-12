@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Nanzbee4K Panel</title>
+<style>
+:root{--bg:#17181c;--side:#22242a;--card:#22242a;--line:#32353d;--text:#e8e9ed;--mute:#8a8a94;--acc:#1E9BFF;--ok:#46D369;--bad:#ff5d5d}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+button,input,select{font:inherit;color:inherit}
+.hidden{display:none!important}
+.center{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:24px;width:100%;max-width:380px}
+.box h1{margin:0 0 4px;font-size:20px}
+.box p{margin:0 0 16px;color:var(--mute);font-size:13px}
+label{display:block;font-size:12px;color:var(--mute);margin:12px 0 4px}
+input,select{width:100%;background:#17181c;border:1px solid var(--line);border-radius:8px;padding:9px 10px;outline:none}
+input:focus,select:focus{border-color:var(--acc)}
+.btn{background:var(--acc);border:0;border-radius:8px;padding:9px 14px;cursor:pointer;font-weight:600;color:#fff}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text);font-weight:500}
+.btn:disabled{opacity:.5;cursor:default}
+.box .btn{width:100%;margin-top:18px}
+.err{color:var(--bad);font-size:13px;margin-top:10px;min-height:18px}
+#app{display:flex;min-height:100vh}
+nav{width:148px;background:var(--side);padding:16px 10px;flex-shrink:0;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh}
+nav h2{font-size:14px;margin:0 6px 14px}
+nav button{background:none;border:0;text-align:left;padding:9px 10px;border-radius:8px;cursor:pointer;color:var(--mute)}
+nav button.on{background:#2d3038;color:#fff}
+nav .sp{flex:1}
+main{flex:1;padding:20px;min-width:0}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.top h1{font-size:18px;margin:0;flex:1}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.card .n{font-size:30px;font-weight:700}
+.card .l{color:var(--mute);font-size:12px}
+.tools{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.tools input[type=search]{max-width:280px}
+.chk{display:flex;align-items:center;gap:6px;color:var(--mute);cursor:pointer;white-space:nowrap}
+.chk input{width:auto}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;background:var(--card)}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--mute);font-weight:500;font-size:12px}
+tr:last-child td{border-bottom:0}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--mute);margin-right:6px}
+.dot.on{background:var(--ok)}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+td select{padding:5px 8px;min-width:120px}
+.tag{font-size:11px;background:#2d3038;border-radius:6px;padding:2px 7px;color:var(--acc)}
+.sw{position:relative;display:inline-block;width:36px;height:20px}
+.sw input{opacity:0;width:0;height:0}
+.sw span{position:absolute;inset:0;background:#3a3d46;border-radius:20px;cursor:pointer;transition:.15s}
+.sw span:before{content:"";position:absolute;width:14px;height:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s}
+.sw input:checked+span{background:var(--ok)}
+.sw input:checked+span:before{transform:translateX(16px)}
+.empty{padding:24px;text-align:center;color:var(--mute)}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#2d3038;border:1px solid var(--line);padding:9px 16px;border-radius:8px;z-index:9}
+.toast.bad{border-color:var(--bad)}
+.row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.row input{max-width:420px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:8}
+.mbox{background:var(--card);border:1px solid var(--line);border-radius:12px;width:100%;max-width:520px;max-height:85vh;display:flex;flex-direction:column}
+.mbox header{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.mbox header b{flex:1}
+.mbox .body{overflow:auto}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:4px 12px;margin-bottom:16px}
+.form .full{grid-column:1/-1}
+@media(max-width:640px){#app{flex-direction:column}nav{width:auto;height:auto;position:static;flex-direction:row;flex-wrap:wrap;padding:8px}nav h2{display:none}nav .sp{display:none}main{padding:12px}}
+</style>
+</head>
+<body>
+
+<!-- First run: project URL + publishable key -->
+<div id="vSetup" class="center hidden">
+  <form class="box" id="fSetup">
+    <h1>Nanzbee4K Panel</h1>
+    <p>One-time setup. Stored only in this browser.</p>
+    <label>Project URL</label>
+    <input id="sUrl" placeholder="https://xxxx.supabase.co" autocomplete="off" required>
+    <label>Publishable key</label>
+    <input id="sKey" placeholder="sb_publishable_..." autocomplete="off" required>
+    <div class="err" id="eSetup"></div>
+    <button class="btn" type="submit">Save</button>
+  </form>
+</div>
+
+<!-- Login -->
+<div id="vLogin" class="center hidden">
+  <form class="box" id="fLogin">
+    <h1>Nanzbee4K Panel</h1>
+    <p>Admin sign in</p>
+    <label>Email</label>
+    <input id="lEmail" type="email" autocomplete="username" required>
+    <label>Password</label>
+    <input id="lPass" type="password" autocomplete="current-password" required>
+    <div class="err" id="eLogin"></div>
+    <button class="btn" type="submit" id="bLogin">Sign in</button>
+    <button class="btn ghost" type="button" id="bReset" style="margin-top:8px">Change project settings</button>
+  </form>
+</div>
+
+<!-- App -->
+<div id="app" class="hidden">
+  <nav>
+    <h2>Nanzbee4K Panel</h2>
+    <button data-p="dash" class="on">Dashboard</button>
+    <button data-p="dev">Devices</button>
+    <button data-p="dom">Domains</button>
+    <button data-p="mac">Add by MAC</button>
+    <div class="sp"></div>
+    <button id="bOut">Sign out</button>
+  </nav>
+  <main>
+    <div class="top">
+      <h1 id="title">Dashboard</h1>
+      <span id="stamp" style="color:var(--mute);font-size:12px"></span>
+      <button class="btn ghost" id="bRef">Refresh</button>
+    </div>
+    <section id="pDash"></section>
+    <section id="pUpd" class="hidden"></section>
+    <section id="pDev" class="hidden"></section>
+    <section id="pDom" class="hidden"></section>
+    <section id="pMac" class="hidden"></section>
+  </main>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script>
+(function(){
+"use strict";
+var $=function(id){return document.getElementById(id)};
+var LS={get:function(k){try{return localStorage.getItem(k)}catch(e){return null}},
+  set:function(k,v){try{localStorage.setItem(k,v)}catch(e){}},
+  del:function(k){try{localStorage.removeItem(k)}catch(e){}}};
+
+var cfg={url:LS.get("n4_url")||"https://rqeglwzcyczvlqppftoj.supabase.co",key:LS.get("n4_key")||"sb_publishable_zazAI4-a9llxCmvtsM9yBg_v3wHmMs7"};
+var sess=null; try{sess=JSON.parse(LS.get("n4_sess")||"null")}catch(e){}
+var st={devices:[],domains:[],cm:{},pr:{},pend:[],tab:"clients",page:"dash",q:"",onlyOn:false,hide:LS.get("n4_hide")==="1",timer:null};
+
+function h(tag,attrs,kids){
+  var e=document.createElement(tag);
+  if(attrs)for(var k in attrs){
+    if(k==="text")e.textContent=attrs[k];
+    else if(k.slice(0,2)==="on")e.addEventListener(k.slice(2),attrs[k]);
+    else if(attrs[k]===true)e.setAttribute(k,"");
+    else if(attrs[k]!==false&&attrs[k]!=null)e.setAttribute(k,attrs[k]);
+  }
+  (kids||[]).forEach(function(c){if(c==null)return;e.appendChild(typeof c==="string"?document.createTextNode(c):c)});
+  return e;
+}
+function clear(e){while(e.firstChild)e.removeChild(e.firstChild)}
+function toast(msg,bad){var t=$("toast");t.textContent=msg;t.className="toast"+(bad?" bad":"");clearTimeout(toast._t);toast._t=setTimeout(function(){t.className="toast hidden"},3500)}
+function show(v){["vSetup","vLogin","app"].forEach(function(i){$(i).classList.toggle("hidden",i!==v)})}
+
+/* ---------- API ---------- */
+function base(){return cfg.url.replace(/\/+$/,"")}
+function api(path,opt){
+  opt=opt||{};
+  return ensureToken().then(function(){
+    var hd={apikey:cfg.key,Authorization:"Bearer "+sess.access_token,"Content-Type":"application/json"};
+    if(opt.prefer)hd.Prefer=opt.prefer;
+    return fetch(base()+path,{method:opt.method||"GET",headers:hd,body:opt.body?JSON.stringify(opt.body):undefined});
+  }).then(function(r){
+    if(r.status===401){logout();throw new Error("Session expired")}
+    if(!r.ok)return r.text().then(function(t){var m=t;try{m=JSON.parse(t).message||t}catch(e){}throw new Error(m||("HTTP "+r.status))});
+    return r.status===204?null:r.text().then(function(t){return t?JSON.parse(t):null});
+  });
+}
+function saveSess(j){
+  sess={access_token:j.access_token,refresh_token:j.refresh_token,exp:Date.now()+(j.expires_in||3600)*1000};
+  LS.set("n4_sess",JSON.stringify(sess));
+}
+function authCall(grant,body){
+  return fetch(base()+"/auth/v1/token?grant_type="+grant,{method:"POST",headers:{apikey:cfg.key,"Content-Type":"application/json"},body:JSON.stringify(body)})
+   .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error_description||j.msg||j.message||"Sign in failed");return j})});
+}
+function ensureToken(){
+  if(!sess)return Promise.reject(new Error("Not signed in"));
+  if(sess.exp-Date.now()>60000)return Promise.resolve();
+  return authCall("refresh_token",{refresh_token:sess.refresh_token}).then(saveSess).catch(function(e){logout();throw e});
+}
+function logout(){sess=null;LS.del("n4_sess");clearInterval(st.timer);show("vLogin")}
+
+/* ---------- data ---------- */
+function load(){
+  return Promise.all([
+    api("/rest/v1/panel_devices?select=*"),
+    api("/rest/v1/domains?select=*&order=id"),
+    api("/rest/v1/customers?select=username,is_client"),
+    api("/rest/v1/panel_presence?select=*").catch(function(){return []}),
+    st.page==="mac"?api("/rest/v1/rpc/list_pending",{method:"POST",body:{}}).catch(function(){return null}):Promise.resolve(null),
+    st.page==="dash"?api("/rest/v1/rpc/app_latest",{method:"POST",body:{}}).catch(function(){return null}):Promise.resolve(null)
+  ]).then(function(r){
+    if(r[5])st.upd=r[5];
+    st.pr={};(r[3]||[]).forEach(function(x){st.pr[x.device_code]=x});
+    if(r[4])st.pend=r[4];
+    st.devices=r[0]||[];st.domains=r[1]||[];
+    st.cm={};(r[2]||[]).forEach(function(c){st.cm[c.username]=!!c.is_client});
+    var d=new Date();$("stamp").textContent="Updated "+d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
+    render();
+  }).catch(function(e){toast(e.message,true)});
+}
+function isOn(d){var x=st.pr[d.mac];return x?!!x.online:!!d.online}
+function lastSeen(d){var x=st.pr[d.mac];return x?x.last_seen:d.last_seen_kw}
+function kwTime(iso){
+  try{return new Date(iso).toLocaleString("en-GB",{timeZone:"Asia/Kuwait",day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit",hour12:true})}catch(e){return iso}
+}
+function dur(a,b){
+  var m=Math.max(0,Math.round((new Date(b)-new Date(a))/60000));
+  if(m<1)return "<1m";if(m<60)return m+"m";return Math.floor(m/60)+"h "+(m%60)+"m";
+}
+function isClient(d){return !!st.cm[d.username]}
+function clients(){return st.devices.filter(isClient)}
+function latest(){return clients().reduce(function(m,d){return Math.max(m,d.app_code||0)},0)}
+function ago(s){
+  if(!s)return "-";
+  var t=/[zZ]|[+-]\d\d(:?\d\d)?$/.test(s)?s:s.replace(" ","T")+"+03:00";
+  var ms=Date.now()-new Date(t).getTime();if(isNaN(ms))return s;
+  var m=Math.round(ms/60000);
+  if(m<1)return "just now";if(m<60)return m+"m ago";
+  var hr=Math.round(m/60);if(hr<48)return hr+"h ago";
+  return Math.round(hr/24)+"d ago";
+}
+function mask(u){return st.hide?"••••••••••":u}
+
+/* ---------- render ---------- */
+function render(force){
+  var ae=document.activeElement;
+  if(!force&&ae&&ae.tagName==="SELECT"&&ae.closest&&ae.closest("main"))return;
+  $("pMac").classList.toggle("hidden",st.page!=="mac");
+  $("pDash").classList.toggle("hidden",st.page!=="dash");
+  $("pUpd").classList.toggle("hidden",st.page!=="dash");
+  $("pDev").classList.toggle("hidden",st.page!=="dev");
+  $("pDom").classList.toggle("hidden",st.page!=="dom");
+  $("title").textContent={dash:"Dashboard",dev:"Devices",dom:"Domains",mac:"Add by MAC"}[st.page];
+  Array.prototype.forEach.call(document.querySelectorAll("nav button[data-p]"),function(b){b.classList.toggle("on",b.dataset.p===st.page)});
+  if(st.page==="dash"){rDash();rUpd()}else if(st.page==="dev")rDev();else if(st.page==="dom")rDom();else rMac();
+}
+function rDash(){
+  var p=$("pDash");clear(p);
+  var cl=clients(),on=cl.filter(isOn).length,L=latest();
+  var old=cl.filter(function(d){return (d.app_code||0)<L}).length;
+  var nw=st.devices.length-cl.length;
+  function c(n,l){return h("div",{class:"card"},[h("div",{class:"n",text:String(n)}),h("div",{class:"l",text:l})])}
+  p.appendChild(h("div",{class:"cards"},[c(on,"Online now"),c(cl.length,"Clients"),c(old,"Old version"),c(nw,"New (not clients)")]));
+}
+/* ---------- country flag ---------- */
+var CC={"kuwait":"kw","saudi arabia":"sa","united arab emirates":"ae","qatar":"qa","bahrain":"bh","oman":"om","iraq":"iq","jordan":"jo","lebanon":"lb","syria":"sy","egypt":"eg","yemen":"ye","palestine":"ps","israel":"il","turkey":"tr","türkiye":"tr","iran":"ir","united states":"us","united kingdom":"gb","germany":"de","france":"fr","canada":"ca","australia":"au","india":"in","pakistan":"pk","bangladesh":"bd","sri lanka":"lk","nepal":"np","philippines":"ph","indonesia":"id","malaysia":"my","singapore":"sg","thailand":"th","china":"cn","japan":"jp","south korea":"kr","russia":"ru","ukraine":"ua","poland":"pl","romania":"ro","bulgaria":"bg","hungary":"hu","czechia":"cz","austria":"at","switzerland":"ch","italy":"it","spain":"es","portugal":"pt","netherlands":"nl","belgium":"be","luxembourg":"lu","ireland":"ie","denmark":"dk","sweden":"se","norway":"no","finland":"fi","greece":"gr","cyprus":"cy","morocco":"ma","algeria":"dz","tunisia":"tn","libya":"ly","sudan":"sd","south sudan":"ss","somalia":"so","ethiopia":"et","eritrea":"er","kenya":"ke","nigeria":"ng","south africa":"za","afghanistan":"af","uzbekistan":"uz","kazakhstan":"kz","azerbaijan":"az","georgia":"ge","armenia":"am","brazil":"br","mexico":"mx","argentina":"ar","hong kong":"hk","taiwan":"tw","vietnam":"vn","new zealand":"nz","mauritania":"mr","djibouti":"dj","comoros":"km"};
+function flagCode(d){
+  var c=(d.country||"").trim();
+  if(/^[A-Za-z]{2}$/.test(c))return c.toLowerCase();
+  var n=(d.country_name||d.country||"").trim().toLowerCase();
+  return CC[n]||null;
+}
+function flagEl(d){
+  var name=d.country_name||d.country||"";
+  if(!name)return document.createTextNode("-");
+  var code=flagCode(d);
+  if(!code)return document.createTextNode(name);
+  var img=h("img",{src:"https://flagcdn.com/w40/"+code+".png",alt:name,title:name,width:"24",style:"display:block;border-radius:2px;border:1px solid var(--line)"});
+  // لو الصورة ما انحمّلت، منعرض اسم الدولة بدلها
+  img.addEventListener("error",function(){if(img.parentNode)img.parentNode.replaceChild(document.createTextNode(name),img)});
+  return img;
+}
+// شو عم يشاهد العميل هلق (بيظهر بس إذا أونلاين)
+function watchEl(d){
+  var x=st.pr[d.mac];
+  var w=(isOn(d)&&x&&x.watching)?String(x.watching):"";
+  return h("td",{title:w,style:"max-width:260px;overflow:hidden;text-overflow:ellipsis;color:"+(w?"var(--text)":"var(--mute)")},[w||"-"]);
+}
+/* ---------- إشعار تحديث التطبيق ---------- */
+function rUpd(){
+  var p=$("pUpd");
+  if(!p.firstChild){
+    p.appendChild(h("h3",{style:"margin:18px 0 8px;font-size:14px",text:"App update notice"}));
+    p.appendChild(h("form",{id:"uForm",class:"card",onsubmit:function(e){e.preventDefault();saveUpd()}},[
+      h("div",{class:"form"},[
+        h("div",null,[h("label",{text:"Latest version code (a number)"}),h("input",{id:"uCode",type:"number",min:"0",inputmode:"numeric",autocomplete:"off"})]),
+        h("div",null,[h("label",{text:"Version name"}),h("input",{id:"uName",placeholder:"2.5",autocomplete:"off"})]),
+        h("div",{class:"full"},[h("label",{text:"Download code (shown in step 2 of the notice)"}),h("input",{id:"uNote",placeholder:"e.g. 123456",autocomplete:"off"})])]),
+      h("button",{class:"btn",type:"submit",id:"uBtn",text:"Save"}),
+      h("div",{id:"uHint",style:"color:var(--mute);font-size:12px;margin-top:10px"})]));
+  }
+  if(st.upd&&!st.updFilled){
+    $("uCode").value=st.upd.code||0;$("uName").value=st.upd.name||"";$("uNote").value=st.upd.note||"";
+    st.updFilled=true;
+  }
+  var mx=st.devices.reduce(function(m,d){return Math.max(m,d.app_code||0)},0);
+  $("uHint").textContent="Highest version code on devices now: "+mx+". Clients with a lower code see the notice once per version. Set the code to 0 to turn the notice off.";
+}
+function saveUpd(){
+  var code=parseInt($("uCode").value,10);
+  if(isNaN(code)||code<0){toast("Version code must be a number (0 or more)",true);return}
+  var name=$("uName").value.trim(),note=$("uNote").value.trim();
+  if(code>0&&!name){toast("Enter the version name (for example 2.5)",true);return}
+  $("uBtn").disabled=true;
+  api("/rest/v1/rpc/set_app_latest",{method:"POST",body:{p_code:code,p_name:name,p_note:note}})
+   .then(function(){st.upd={code:code,name:name,note:note};toast(code>0?"Saved. Clients with an older version will see the notice.":"Notice turned off")})
+   .catch(function(e){toast(e.message,true)}).then(function(){$("uBtn").disabled=false});
+}
+function rDev(){
+  var p=$("pDev");
+  var keep=document.activeElement&&document.activeElement.id==="qBox";
+  clear(p);
+  var q=h("input",{id:"qBox",type:"search",placeholder:"Search username or MAC",value:st.q,oninput:function(e){st.q=e.target.value;rows()}});
+  var cb=h("input",{type:"checkbox",onchange:function(e){st.onlyOn=e.target.checked;rows()}});cb.checked=st.onlyOn;
+  var nNew=st.devices.length-clients().length;
+  function tabBtn(id,label){return h("button",{class:"btn"+(st.tab===id?"":" ghost"),text:label,onclick:function(){st.tab=id;render(true)}})}
+  p.appendChild(h("div",{class:"tools"},[tabBtn("clients","Clients ("+clients().length+")"),tabBtn("new","New ("+nNew+")")]));
+  p.appendChild(h("div",{class:"tools"},[q,h("label",{class:"chk",style:"margin:0"},[cb,"Online only"])]));
+  var tb=h("tbody");
+  p.appendChild(h("div",{class:"tw"},[h("table",null,[
+    h("thead",null,[h("tr",null,["Username","MAC","Country","Version","Status","Watching","Domain",""].map(function(x){return h("th",{text:x})}))]),tb])]));
+  var empty=h("div",{class:"empty",text:"No devices"});p.appendChild(empty);
+  function rows(){
+    clear(tb);
+    var s=st.q.trim().toLowerCase();
+    var list=st.devices.filter(function(d){
+      if(st.onlyOn&&!isOn(d))return false;
+      if(isClient(d)!==(st.tab==="clients"))return false;
+      return !s||(d.username||"").toLowerCase().indexOf(s)>=0||(d.mac||"").toLowerCase().indexOf(s)>=0;
+    });
+    empty.classList.toggle("hidden",list.length>0);
+    list.forEach(function(d){
+      var sel=h("select",{onchange:function(e){setDomain(d,e.target.value,sel)}});
+      st.domains.forEach(function(x){
+        var o=h("option",{value:String(x.id),text:"#"+x.id+(x.is_default?" (default)":"")+(x.active?"":" (off)")});
+        if(x.id===d.domain_no)o.selected=true;sel.appendChild(o);
+      });
+      tb.appendChild(h("tr",null,[
+        h("td",{text:d.username||"-"}),
+        h("td",{class:"mono",text:d.mac||"-"}),
+        h("td",null,[flagEl(d)]),
+        h("td",{text:d.app_version||"-"}),
+        h("td",null,[h("span",{class:"dot"+(isOn(d)?" on":"")}),isOn(d)?"Online":ago(lastSeen(d))]),
+        watchEl(d),
+        h("td",null,[sel]),
+        h("td",null,[
+          h("button",{class:"btn ghost",text:"Log",onclick:function(){showLog(d)}}),
+          document.createTextNode(" "),
+          isOn(d)?h("button",{class:"btn ghost",text:"Kick",onclick:function(){kickDevice(d)}}):null,
+          isOn(d)?document.createTextNode(" "):null,
+          // "Make client" بتبويب New بس (ما في زر Move to New بتبويب Clients)
+          st.tab==="new"?h("button",{class:"btn",text:"Make client",onclick:function(){setClient(d,true)}}):null,
+          st.tab==="new"?document.createTextNode(" "):null,
+          h("button",{class:"btn ghost",text:"Delete",onclick:function(){delClient(d)}})
+        ])
+      ]));
+    });
+  }
+  rows();
+  if(keep){var qb=$("qBox");qb.focus();qb.setSelectionRange(qb.value.length,qb.value.length)}
+}
+function showLog(d){
+  var body=h("div",{class:"body"},[h("div",{class:"empty",text:"Loading..."})]);
+  var box=h("div",{class:"mbox"},[
+    h("header",null,[h("b",{text:(d.username||"")+"  ·  "+(d.mac||"")}),h("button",{class:"btn ghost",text:"Close",onclick:function(){document.body.removeChild(ov)}})]),body]);
+  var ov=h("div",{class:"modal",onclick:function(e){if(e.target===ov)document.body.removeChild(ov)}},[box]);
+  document.body.appendChild(ov);
+  api("/rest/v1/device_sessions?device_code=eq."+encodeURIComponent(d.mac)+"&order=started_at.desc&limit=60").then(function(rows){
+    clear(body);
+    if(!rows||!rows.length){body.appendChild(h("div",{class:"empty",text:"No sessions recorded yet. The log starts when the client updates to app 2.1."}));return}
+    var tb=h("tbody");
+    rows.forEach(function(r){
+      var live=!r.ended_at&&(Date.now()-new Date(r.last_seen).getTime())<90000;
+      var end=r.ended_at||r.last_seen;
+      tb.appendChild(h("tr",null,[
+        h("td",{text:kwTime(r.started_at)}),
+        h("td",null,live?[h("span",{class:"dot on"}),"Online now"]:[kwTime(end)]),
+        h("td",{text:dur(r.started_at,end)})]));
+    });
+    body.appendChild(h("table",null,[h("thead",null,[h("tr",null,["Opened","Closed","Duration"].map(function(x){return h("th",{text:x})}))]),tb]));
+    body.appendChild(h("div",{class:"empty",style:"font-size:12px",text:"Times are Kuwait time. Last 90 days."}));
+  }).catch(function(e){clear(body);body.appendChild(h("div",{class:"empty",text:e.message}))});
+}
+function normMac(v){
+  var x=(v||"").replace(/[^0-9a-fA-F]/g,"").toUpperCase();
+  if(x.length!==12)return null;
+  return x.match(/.{2}/g).join(":");
+}
+function rMac(){
+  var p=$("pMac");
+  if(!p.firstChild){
+    var sel=h("select",{id:"mDom"});
+    var f=h("form",{id:"mForm",class:"card",onsubmit:function(e){e.preventDefault();addMac()}},[
+      h("div",{class:"form"},[
+        h("div",null,[h("label",{text:"MAC address"}),h("input",{id:"mMac",placeholder:"8A:FB:03:5F:CB:9D",autocomplete:"off"})]),
+        h("div",null,[h("label",{text:"Device Key (6 digits)"}),h("input",{id:"mKey",placeholder:"123456",inputmode:"numeric",maxlength:"6",autocomplete:"off"})]),
+        h("div",null,[h("label",{text:"Username"}),h("input",{id:"mUser",autocomplete:"off"})]),
+        h("div",null,[h("label",{text:"Password"}),h("input",{id:"mPass",autocomplete:"off"})]),
+        h("div",null,[h("label",{text:"Domain"}),sel])]),
+      h("button",{class:"btn",type:"submit",id:"mBtn",text:"Add"}),
+      h("div",{style:"color:var(--mute);font-size:12px;margin-top:10px",text:"When the client opens the app on the login screen, it signs in by itself within ~10 seconds. The password is deleted from the database as soon as it is delivered (or after 24 hours)."})]);
+    p.appendChild(f);
+    p.appendChild(h("h3",{style:"margin:18px 0 8px;font-size:14px",text:"Waiting to be delivered"}));
+    p.appendChild(h("div",{id:"mList"}));
+  }
+  var sel2=$("mDom"),cur=sel2.value;clear(sel2);
+  st.domains.filter(function(x){return x.active}).forEach(function(x){
+    var o=h("option",{value:String(x.id),text:"#"+x.id+(x.is_default?" (default)":"")});
+    if(String(x.id)===cur||(!cur&&x.is_default))o.selected=true;sel2.appendChild(o);
+  });
+  var l=$("mList");clear(l);
+  if(!st.pend.length){l.appendChild(h("div",{class:"empty",text:"Nothing waiting"}));return}
+  var tb=h("tbody");
+  st.pend.forEach(function(x){
+    tb.appendChild(h("tr",null,[h("td",{class:"mono",text:x.device_code}),h("td",{text:x.username}),
+      h("td",{text:"#"+(x.domain_id==null?"-":x.domain_id)}),h("td",{text:kwTime(x.created_at)}),
+      h("td",null,[h("button",{class:"btn ghost",text:"Cancel",onclick:function(){cancelMac(x.device_code)}})])]));
+  });
+  l.appendChild(h("div",{class:"tw"},[h("table",null,[h("thead",null,[h("tr",null,["MAC","Username","Domain","Added",""].map(function(t){return h("th",{text:t})}))]),tb])]));
+}
+function addMac(){
+  var mac=normMac($("mMac").value),key=$("mKey").value.trim(),u=$("mUser").value.trim(),pw=$("mPass").value,dom=parseInt($("mDom").value,10);
+  if(!mac){toast("MAC must have 12 hex characters",true);return}
+  if(!/^\d{6}$/.test(key)){toast("Device Key must be 6 digits",true);return}
+  if(!u||!pw){toast("Username and password are required",true);return}
+  if(isNaN(dom)){toast("Choose a domain",true);return}
+  $("mBtn").disabled=true;
+  api("/rest/v1/rpc/add_mac_user",{method:"POST",body:{p_mac:mac,p_key:key,p_username:u,p_password:pw,p_domain_id:dom}})
+   .then(function(){toast("Saved. Waiting for the client to open the app.");$("mMac").value="";$("mKey").value="";$("mUser").value="";$("mPass").value="";return load()})
+   .catch(function(e){toast(e.message,true)}).then(function(){$("mBtn").disabled=false});
+}
+function cancelMac(mac){
+  api("/rest/v1/rpc/cancel_pending",{method:"POST",body:{p_mac:mac}}).then(function(){toast("Cancelled");return load()}).catch(function(e){toast(e.message,true)});
+}
+function setClient(d,v){
+  api("/rest/v1/customers?username=eq."+encodeURIComponent(d.username),{method:"PATCH",body:{is_client:v},prefer:"return=representation"})
+   .then(function(r){if(!r||!r.length)throw new Error("Not saved");st.cm[d.username]=v;toast(d.username+(v?" is now a client":" moved to New"));render()})
+   .catch(function(e){toast(e.message,true)});
+}
+// طرد: التطبيق عند العميل بيطلع لصفحة الدخول (خلال حوالي 30 ثانية). بس للأونلاين، والطلب بينتهي بعد دقيقتين
+function kickDevice(d){
+  if(!confirm("Kick "+(d.username||d.mac)+"?\n\nThe app on this device will sign out and go back to the login screen within about 30 seconds. They can sign in again."))return;
+  api("/rest/v1/rpc/kick_device",{method:"POST",body:{p_device_code:d.mac}})
+   .then(function(){toast("Kick sent to "+(d.username||d.mac)+". Signs out within ~30 seconds.")})
+   .catch(function(e){toast(e.message,true)});
+}
+function delClient(d){
+  if(!confirm("Delete "+d.username+" and all of their devices from the panel?\n\nIf the app is opened again it will reappear under New."))return;
+  api("/rest/v1/rpc/delete_client",{method:"POST",body:{p_username:d.username}})
+   .then(function(){toast("Deleted "+d.username);return load()}).catch(function(e){toast(e.message,true)});
+}
+function setDomain(d,val,sel){
+  var id=parseInt(val,10);
+  sel.disabled=true;
+  api("/rest/v1/customers?username=eq."+encodeURIComponent(d.username),{method:"PATCH",body:{domain_id:id},prefer:"return=representation"})
+   .then(function(r){
+     if(!r||!r.length)throw new Error("Not saved (no matching customer)");
+     d.domain_no=id;toast("Domain updated for "+d.username);
+   }).catch(function(e){toast(e.message,true);sel.value=String(d.domain_no)})
+   .then(function(){sel.disabled=false});
+}
+function rDom(){
+  var p=$("pDom");
+  // الصفحة بتتحدّث كل 10 ثواني وبتعيد بناء هالنموذج: منحفظ اللي عم تكتبه ومكان المؤشر قبل ما نمسح
+  var oldIn=$("newUrl"),keep=oldIn?oldIn.value:"",hadFocus=!!oldIn&&document.activeElement===oldIn;
+  var selS=hadFocus?oldIn.selectionStart:0,selE=hadFocus?oldIn.selectionEnd:0;
+  clear(p);
+  var hide=h("input",{type:"checkbox",onchange:function(e){st.hide=e.target.checked;LS.set("n4_hide",st.hide?"1":"0");rDom()}});hide.checked=st.hide;
+  var inp=h("input",{id:"newUrl",placeholder:"http://newdomain.com/"});
+  inp.value=keep;
+  p.appendChild(h("div",{class:"row"},[inp,h("button",{class:"btn",text:"New",onclick:function(){addDomain(inp.value)}}),
+    h("label",{class:"chk",style:"margin:0 0 0 auto"},[hide,"Hide links"])]));
+  if(hadFocus){inp.focus();try{inp.setSelectionRange(selS,selE)}catch(e){}}
+  var tb=h("tbody");
+  p.appendChild(h("div",{class:"tw"},[h("table",null,[
+    h("thead",null,[h("tr",null,["#","URL","Default","Active",""].map(function(x){return h("th",{text:x})}))]),tb])]));
+  var count={};st.devices.forEach(function(d){count[d.domain_no]=(count[d.domain_no]||0)+1});
+  if(!st.domains.length)p.appendChild(h("div",{class:"empty",text:"No domains"}));
+  st.domains.forEach(function(x){
+    var act=h("input",{type:"checkbox",onchange:function(e){toggleActive(x,e.target)}});act.checked=!!x.active;
+    var def=x.is_default?h("span",{class:"tag",text:"Default"}):h("button",{class:"btn ghost",text:"Set default",onclick:function(){setDefault(x)}});
+    tb.appendChild(h("tr",null,[
+      h("td",{text:String(x.id)}),
+      h("td",{class:"mono",text:mask(x.url)+(count[x.id]?"  ("+count[x.id]+" devices)":"")}),
+      h("td",null,[def]),
+      h("td",null,[h("label",{class:"sw"},[act,h("span")])]),
+      h("td",null,[h("button",{class:"btn ghost",text:"Delete",onclick:function(){delDomain(x,count[x.id]||0)}})])
+    ]));
+  });
+}
+function addDomain(url){
+  url=(url||"").trim();
+  if(!/^https?:\/\/.+/i.test(url)){toast("URL must start with http:// or https://",true);return}
+  if(!/\/$/.test(url))url+="/";
+  var id=st.domains.reduce(function(m,d){return Math.max(m,d.id)},0)+1;
+  api("/rest/v1/domains",{method:"POST",body:{id:id,url:url,is_default:false,active:true}})
+   .then(function(){var ni=$("newUrl");if(ni)ni.value="";toast("Domain added");return load()}).catch(function(e){toast(e.message,true)});
+}
+function toggleActive(x,box){
+  var v=box.checked;
+  if(!v&&x.is_default){box.checked=true;toast("Set another default first",true);return}
+  api("/rest/v1/domains?id=eq."+x.id,{method:"PATCH",body:{active:v}})
+   .then(function(){x.active=v;toast(v?"Activated":"Deactivated")}).catch(function(e){box.checked=!v;toast(e.message,true)});
+}
+function delDomain(x,n){
+  if(x.is_default){toast("Set another default first",true);return}
+  if(!confirm("Delete domain #"+x.id+"?"+(n?"\n\n"+n+" device(s) use it and will switch to the default domain.":"")))return;
+  api("/rest/v1/rpc/delete_domain",{method:"POST",body:{p_id:x.id}})
+   .then(function(){toast("Domain deleted");return load()}).catch(function(e){toast(e.message,true)});
+}
+function setDefault(x){
+  if(!x.active){toast("Activate this domain first",true);return}
+  api("/rest/v1/rpc/set_default_domain",{method:"POST",body:{p_id:x.id}})
+   .then(function(){toast("Default changed");return load()}).catch(function(e){toast(e.message,true)});
+}
+
+/* ---------- wiring ---------- */
+function start(){
+  show("app");load();
+  clearInterval(st.timer);
+  st.timer=setInterval(function(){
+    if(document.hidden)return;
+    load();
+  },10000);
+}
+function boot(){
+  if(!cfg.url||!cfg.key){show("vSetup");return}
+  if(sess)start();else show("vLogin");
+}
+$("fSetup").addEventListener("submit",function(e){
+  e.preventDefault();
+  var u=$("sUrl").value.trim(),k=$("sKey").value.trim();
+  if(!/^https:\/\/[^\s/]+\.supabase\.co\/?$/i.test(u)){$("eSetup").textContent="URL must look like https://xxxx.supabase.co";return}
+  cfg={url:u,key:k};LS.set("n4_url",u);LS.set("n4_key",k);$("sKey").value="";show("vLogin");
+});
+$("bReset").addEventListener("click",function(){LS.del("n4_url");LS.del("n4_key");cfg={};show("vSetup")});
+$("fLogin").addEventListener("submit",function(e){
+  e.preventDefault();$("eLogin").textContent="";$("bLogin").disabled=true;
+  authCall("password",{email:$("lEmail").value.trim(),password:$("lPass").value})
+   .then(function(j){saveSess(j);$("lPass").value="";start()})
+   .catch(function(er){$("eLogin").textContent=er.message})
+   .then(function(){$("bLogin").disabled=false});
+});
+$("bOut").addEventListener("click",logout);
+$("bRef").addEventListener("click",load);
+Array.prototype.forEach.call(document.querySelectorAll("nav button[data-p]"),function(b){
+  b.addEventListener("click",function(){st.page=b.dataset.p;render(true);if(st.page==="mac")load()});
+});
+boot();
+})();
+</script>
+</body>
+</html>
