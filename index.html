@@ -327,6 +327,9 @@ function rDev(){
     empty.classList.toggle("hidden",list.length>0);
     list.forEach(function(d){
       var sel=h("select",{onchange:function(e){setDomain(d,e.target.value,sel)}});
+      var defD=st.domains.filter(function(x){return x.is_default})[0];
+      var oF=h("option",{value:"",text:"Follows default"+(defD?" (#"+defD.id+")":"")});
+      if(d.domain_no==null)oF.selected=true;sel.appendChild(oF);
       st.domains.forEach(function(x){
         var o=h("option",{value:String(x.id),text:"#"+x.id+(x.is_default?" (default)":"")+(x.active?"":" (off)")});
         if(x.id===d.domain_no)o.selected=true;sel.appendChild(o);
@@ -400,26 +403,28 @@ function rMac(){
     p.appendChild(h("div",{id:"mList"}));
   }
   var sel2=$("mDom"),cur=sel2.value;clear(sel2);
+  var oF2=h("option",{value:"",text:"Follows default"});
+  if(!cur)oF2.selected=true;sel2.appendChild(oF2);
   st.domains.filter(function(x){return x.active}).forEach(function(x){
     var o=h("option",{value:String(x.id),text:"#"+x.id+(x.is_default?" (default)":"")});
-    if(String(x.id)===cur||(!cur&&x.is_default))o.selected=true;sel2.appendChild(o);
+    if(String(x.id)===cur)o.selected=true;sel2.appendChild(o);
   });
   var l=$("mList");clear(l);
   if(!st.pend.length){l.appendChild(h("div",{class:"empty",text:"Nothing waiting"}));return}
   var tb=h("tbody");
   st.pend.forEach(function(x){
     tb.appendChild(h("tr",null,[h("td",{class:"mono",text:x.device_code}),h("td",{text:x.username}),
-      h("td",{text:"#"+(x.domain_id==null?"-":x.domain_id)}),h("td",{text:kwTime(x.created_at)}),
+      h("td",{text:(x.domain_id==null?"Follows default":"#"+x.domain_id)}),h("td",{text:kwTime(x.created_at)}),
       h("td",null,[h("button",{class:"btn ghost",text:"Cancel",onclick:function(){cancelMac(x.device_code)}})])]));
   });
   l.appendChild(h("div",{class:"tw"},[h("table",null,[h("thead",null,[h("tr",null,["MAC","Username","Domain","Added",""].map(function(t){return h("th",{text:t})}))]),tb])]));
 }
 function addMac(){
-  var mac=normMac($("mMac").value),key=$("mKey").value.trim(),u=$("mUser").value.trim(),pw=$("mPass").value,dom=parseInt($("mDom").value,10);
+  var mac=normMac($("mMac").value),key=$("mKey").value.trim(),u=$("mUser").value.trim(),pw=$("mPass").value,dom=($("mDom").value===""?null:parseInt($("mDom").value,10));
   if(!mac){toast("MAC must have 12 hex characters",true);return}
   if(!/^\d{6}$/.test(key)){toast("Device Key must be 6 digits",true);return}
   if(!u||!pw){toast("Username and password are required",true);return}
-  if(isNaN(dom)){toast("Choose a domain",true);return}
+  if(dom!==null&&isNaN(dom)){toast("Choose a domain",true);return}
   $("mBtn").disabled=true;
   api("/rest/v1/rpc/add_mac_user",{method:"POST",body:{p_mac:mac,p_key:key,p_username:u,p_password:pw,p_domain_id:dom}})
    .then(function(){toast("Saved. Waiting for the client to open the app.");$("mMac").value="";$("mKey").value="";$("mUser").value="";$("mPass").value="";return load()})
@@ -446,13 +451,13 @@ function delClient(d){
    .then(function(){toast("Deleted "+d.username);return load()}).catch(function(e){toast(e.message,true)});
 }
 function setDomain(d,val,sel){
-  var id=parseInt(val,10);
+  var id=(val===""?null:parseInt(val,10));
   sel.disabled=true;
   api("/rest/v1/customers?username=eq."+encodeURIComponent(d.username),{method:"PATCH",body:{domain_id:id},prefer:"return=representation"})
    .then(function(r){
      if(!r||!r.length)throw new Error("Not saved (no matching customer)");
-     d.domain_no=id;toast("Domain updated for "+d.username);
-   }).catch(function(e){toast(e.message,true);sel.value=String(d.domain_no)})
+     d.domain_no=id;toast(id==null?(d.username+" now follows the default domain"):("Domain updated for "+d.username));
+   }).catch(function(e){toast(e.message,true);sel.value=(d.domain_no==null?"":String(d.domain_no))})
    .then(function(){sel.disabled=false});
 }
 function rDom(){
@@ -470,7 +475,8 @@ function rDom(){
   var tb=h("tbody");
   p.appendChild(h("div",{class:"tw"},[h("table",null,[
     h("thead",null,[h("tr",null,["#","URL","Default","Active",""].map(function(x){return h("th",{text:x})}))]),tb])]));
-  var count={};st.devices.forEach(function(d){count[d.domain_no]=(count[d.domain_no]||0)+1});
+  var count={};var defId=(st.domains.filter(function(x){return x.is_default})[0]||{}).id;
+  st.devices.forEach(function(d){var k=(d.domain_no==null?defId:d.domain_no);count[k]=(count[k]||0)+1});
   if(!st.domains.length)p.appendChild(h("div",{class:"empty",text:"No domains"}));
   st.domains.forEach(function(x){
     var act=h("input",{type:"checkbox",onchange:function(e){toggleActive(x,e.target)}});act.checked=!!x.active;
